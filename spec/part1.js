@@ -8,6 +8,10 @@
         _.identity(1);
       });
 
+      _.identity = function(x) {
+        return x;
+      };
+
       it('should return whatever value is passed into it', function() {
         var uniqueObject = {};
         expect(_.identity(1)).to.equal(1);
@@ -43,6 +47,33 @@
       checkForNativeMethods(function() {
         _.last([1,2,3]);
       });
+      /*
+
+      _.last = function(arr, index) {
+        
+        if (index === undefined) {
+          return arr[arr.length-1];
+        }
+        if (index === 0) {
+          return [];
+        }
+        if (index > arr.length) {
+          return arr;
+        }
+        if (index) {
+          return arr.slice(arr.length - index, arr.length);
+        }
+
+      };
+      */
+
+      _.last = function(array, n) {
+        if (n > array.length) {
+          return array;
+        }
+        return (n === undefined) ? array[array.length-1] : array.slice(array.length-n, array.length);
+      };
+
 
       it('should pull the last element from an array', function() {
         expect(_.last([1,2,3])).to.equal(3);
@@ -65,6 +96,19 @@
       checkForNativeMethods(function() {
         _.each([1,2,3,4], function(number) {});
       });
+
+      _.each = function(list, iterator) {
+        if (Array.isArray(list)) { // if list is an array
+          for (var i = 0; i < list.length; i++) {
+            iterator(list[i], i, list); // input example (letter, index, collection)
+          }
+        } 
+        else if (typeof list === 'object') { // if list is an object
+          for (var key in list) {
+            iterator(list[key], key, list); // input example (value, property, object) 
+          }
+        }
+      };
 
       it('should be a function', function() {
         expect(_.each).to.be.an.instanceOf(Function);
@@ -252,6 +296,16 @@
         _.filter([1, 2, 3, 4], isEven)
       });
 
+      _.filter = function(arr, test) { // input example (numbers, isOdd)
+        var passed = [];
+        for (var i = 0; i < arr.length; i ++) {
+          if (test(arr[i])) {
+            passed.push(arr[i]);
+          }
+        };
+        return passed;
+      };
+
       it('should return all even numbers in an array', function() {
         var isEven = function(num) { return num % 2 === 0; };
         var evens = _.filter([1, 2, 3, 4, 5, 6], isEven);
@@ -280,6 +334,32 @@
         var isEven = function(num) { return num % 2 === 0; };
         _.reject([1, 2, 3, 4, 5, 6], isEven)
       });
+
+      /*
+      _.reject = function(arr, test) { // input example (numbers, isOdd)
+        var failed = [];
+        for (var i = 0; i < arr.length; i ++) {
+          if (test(arr[i]) === false) {
+            failed.push(arr[i]);
+          }
+        }
+        return failed;
+      } 
+      */
+
+
+      _.reject = function(collection, test) {
+      // TIP: see if you can re-use _.filter() here, without simply
+      // copying code in and modifying it
+        var failed = [];
+        for (var i = 0; i < collection.length; i ++) {
+          var pass = _.filter([collection[i]], test);
+          if (pass != collection[i]) {
+            failed.push(collection[i]);
+          }
+        }
+        return failed;
+      };
 
       it('should reject all even numbers', function() {
         var isEven = function(num) { return num % 2 === 0; };
@@ -336,6 +416,30 @@
         expect(input).to.eql([1, 2, 3, 4, 5]);
       });
 
+      _.uniq = function(array, isSorted, iterator) {
+        var passed = [];
+
+        if (isSorted) {
+          for (var i = 0; i < array.length; i ++) {
+            if (i === 0) { // if first element in array, add
+              passed.push(array[i]);
+            } else if (array[i] !== array[i-1]) { // if element is unique, since array is sorted
+              if (iterator(array[i]) !== iterator(array[i-1])) {  // if the iterator result is unique
+                passed.push(array[i]);
+              }
+            }
+          }
+        } else { // for unsorted arrays
+          for (var i = 0; i < array.length; i ++) {
+            if (_.indexOf(passed, array[i]) === -1) { // if result does not already include element
+              passed.push(array[i]);
+            }
+          }
+        }
+        return passed;
+      };
+
+
       it('should return all unique values contained in an unsorted array', function() {
         var numbers = [1, 2, 1, 3, 1, 4];
 
@@ -346,7 +450,7 @@
         var iterator = function(value) { return value === 1; };
         var numbers = [1, 2, 2, 3, 4, 4];
 
-        expect(_.uniq(FILL_ME_IN)).to.eql([1, 2]);
+        expect(_.uniq(_.uniq(numbers, true, iterator))).to.eql([1, 2]); // array, isSorted, iterator
       });
 
       it('should produce a brand new array instead of modifying the input array', function() {
@@ -354,6 +458,13 @@
         var uniqueNumbers = _.uniq(numbers);
 
         expect(uniqueNumbers).to.not.equal(numbers);
+      });
+      
+      it('should maintain same array length', function() {
+        var numbers = [1, 1, 2, 3];
+        var shuffled = _.shuffle(numbers);
+
+        expect(shuffled.length).to.equal(numbers.length);
       });
     });
 
@@ -363,6 +474,17 @@
           return num * 2;
         })
       });
+
+      _.map = function(collection, iterator) {
+        // map() is a useful primitive iteration function that works a lot
+        // like each(), but in addition to running the operation on all
+        // the members, it also maintains an array of results.
+        var result = [];
+        for (var i = 0; i < collection.length; i ++) {
+          result.push(iterator(collection[i]));
+        }
+        return result;
+      };
 
       it('should not mutate the input array', function() {
         var input = [1,2,3,4,5];
@@ -449,6 +571,19 @@
         _.reduce([1, 2, 3, 4], add)
       });
 
+      _.reduce = function(collection, iterator, accumulator) {
+      // if no starting value for accumulator, use first element of collection as accumulator
+      // if no starting value ofr accumulator, start iterator at index 1
+      if (accumulator === undefined) {
+        accumulator = collection[0];
+        collection = collection.slice(1);
+      } 
+      for (var i = 0; i < collection.length; i ++) {
+        accumulator = iterator(accumulator, collection[i]);
+      }
+      return accumulator;
+    };
+
       it('should be a function', function() {
         expect(_.reduce).to.be.an.instanceOf(Function);
       });
@@ -462,28 +597,7 @@
         var input = [1,2,3,4,5];
         var result = _.reduce(input, function(memo, item) {return item;});
         
-        /*
-         * Mutation of inputs should be avoided without good justification otherwise
-         * as it can often lead to hard to find bugs and confusing code!
-         * Imagine we were reading the code above, and we added the following line:
-         *
-         * var lastElement = input[input.length - 1];
-         *
-         * Without knowing that mutation occured inside of _.reduce,
-         * we would assume that `lastElement` is 5. But if inside of
-         * _.reduce, we use the array method `pop`, we would permanently
-         * change `input` and our assumption would not longer be true,
-         * `lastElement` would be 4 instead!
-         *
-         * The tricky part is that we have no way of knowing about the mutation
-         * just by looking at the code above. We'd have to dive into the
-         * implementation of _.reduce to the exact line that uses `pop`.
-         * If we write a lot of code with this assumption, it might be very hard
-         * to trace back to the correct line in _.reduce.
-         *
-         * You can avoid an entire class of bugs by writing functions
-         * that don't mutate their inputs!
-         */
+        //
 
         expect(input).to.eql([1,2,3,4,5])
       });
