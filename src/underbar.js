@@ -37,6 +37,10 @@
   // Like first, but for the last elements. If n is undefined, return just the
   // last element.
   _.last = function(array, n) {
+    if (n > array.length) {
+      return array;
+    }
+    return n === undefined ? array[array.length-1] : array.slice(array.length-n, array,length);
   };
 
   // Call iterator(value, key, collection) for each element of collection.
@@ -44,7 +48,18 @@
   //
   // Note: _.each does not have a return value, but rather simply runs the
   // iterator function over each item in the input collection.
-  _.each = function(collection, iterator) {
+
+  _.each = function(list, iterator) {
+    if (Array.isArray(list)) { // if list is an array
+      for (var i = 0; i < list.length; i++) {
+        iterator(list[i], i, list); // input example (letter, index, collection)
+      }
+    } 
+    else if (typeof list === 'object') { // if list is an object
+      for (var key in list) {
+        iterator(list[key], key, list); // input example (value, property, object) 
+      }
+    }
   };
 
   // Returns the index at which value can be found in the array, or -1 if value
@@ -66,16 +81,51 @@
 
   // Return all elements of an array that pass a truth test.
   _.filter = function(collection, test) {
+    var passed = [];
+    for (var i = 0; i < collection.length; i ++) {
+      if (test(collection[i])) {
+        passed.push(collection[i]);
+      }
+    }
+    return passed;
   };
 
   // Return all elements of an array that don't pass a truth test.
   _.reject = function(collection, test) {
-    // TIP: see if you can re-use _.filter() here, without simply
-    // copying code in and modifying it
+  // TIP: see if you can re-use _.filter() here, without simply
+  // copying code in and modifying it
+    var failed = [];
+    for (var i = 0; i < collection.length; i ++) {
+      var pass = _.filter([collection[i]], test);
+      if (pass != collection[i]) {
+        failed.push(collection[i]);
+      }
+    }
+    return failed;
   };
 
   // Produce a duplicate-free version of the array.
   _.uniq = function(array, isSorted, iterator) {
+    var passed = [];
+
+    if (isSorted) {
+      for (var i = 0; i < array.length; i ++) {
+        if (i === 0) { // if first element in array, add
+          passed.push(array[i]);
+        } else if (array[i] !== array[i-1]) { // if element is unique, since array is sorted
+          if (iterator(array[i]) !== iterator(array[i-1])) {  // if the iterator result is unique
+            passed.push(array[i]);
+          }
+        }
+      }
+    } else { // for unsorted arrays
+      for (var i = 0; i < array.length; i ++) {
+        if (_.indexOf(passed, array[i]) === -1) { // if result does not already include element
+          passed.push(array[i]);
+        }
+      }
+    }
+    return passed;
   };
 
 
@@ -84,6 +134,11 @@
     // map() is a useful primitive iteration function that works a lot
     // like each(), but in addition to running the operation on all
     // the members, it also maintains an array of results.
+    var result = [];
+    for (var i = 0; i < collection.length; i ++) {
+      result.push(iterator(collection[i]));
+    }
+    return result;
   };
 
   /*
@@ -125,13 +180,33 @@
   //   }); // should be 5, regardless of the iterator function passed in
   //          No accumulator is given so the first element is used.
   _.reduce = function(collection, iterator, accumulator) {
+    // if no starting value for accumulator, use first element of collection as accumulator
+    // if no starting value ofr accumulator, start iterator at index 1
+    if (accumulator === undefined) {
+      accumulator = collection[0];
+      collection = collection.slice(1);
+    } 
+    for (var i = 0; i < collection.length; i ++) {
+      accumulator = iterator(accumulator, collection[i]);
+    }
+    return accumulator;
+
   };
 
   // Determine if the array or object contains a given value (using `===`).
   _.contains = function(collection, target) {
     // TIP: Many iteration problems can be most easily expressed in
     // terms of reduce(). Here's a freebie to demonstrate!
-    return _.reduce(collection, function(wasFound, item) {
+    var array = [];
+    if (Array.isArray(collection)) { // if collection is an array
+      array = collection;
+    } else { // if collection is an object, add its values to array
+      for (var key in collection) {
+        array.push(collection[key]);
+      }
+
+    }
+    return _.reduce(array, function(wasFound, item) {
       if (wasFound) {
         return true;
       }
@@ -143,12 +218,76 @@
   // Determine whether all of the elements match a truth test.
   _.every = function(collection, iterator) {
     // TIP: Try re-using reduce() here.
+    
+    /* VERSION ONE
+    for (var i = 0; i < collection.length; i ++) {
+      if (iterator !== undefined) {
+        if (!iterator(collection[i])){
+          return false;
+        }
+      } else if (!collection[i]) {
+        return false;
+      }
+    }
+    return true; 
+    */
+
+    /* VERSION TWO
+    return _.reduce(collection, function(test, item) {
+      if (iterator) {
+        if (!test) {
+          return false;
+        } 
+        if (!iterator(item)) {
+          return false;
+        } else {
+          return true;
+        }
+      } else {
+        if (!item) {
+          return false;
+        } else {
+          return true;
+        }
+      }
+    }, true);
+    */
+
+    return _.reduce(collection, function(test, item) {
+      if (iterator) {
+        return (test && iterator(item)) ? true : false;
+      } else {
+          return (test && item) ? true : false;
+      }
+    }, true);
+
   };
+
+  
 
   // Determine whether any of the elements pass a truth test. If no iterator is
   // provided, provide a default one
   _.some = function(collection, iterator) {
     // TIP: There's a very clever way to re-use every() here.
+    /* VERSION ONE
+    for (var i = 0; i < collection.length; i ++) {
+      if (iterator) {
+        iterator(collection[i]) ? true : false;
+      } else if (collection[i]) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+    */
+    return _.reduce(collection, function(test, item) {
+      if (iterator) {
+        return (test || iterator(item)) ? true : false;
+      } else {
+          return (test || item) ? true : false;
+      }
+    }, false);
+
   };
 
 
@@ -171,11 +310,31 @@
   //     bla: "even more stuff"
   //   }); // obj1 now contains key1, key2, key3 and bla
   _.extend = function(obj) {
+    var args = Array.prototype.slice.call(arguments);
+    var obj = args[0];
+      for (var i = 1; i < args.length; i ++) {
+        var addObj = args[i];
+        for (var key in addObj) {
+          obj[key] = addObj[key];
+        }
+      }
+    return obj;
   };
 
   // Like extend, but doesn't ever overwrite a key that already
   // exists in obj
   _.defaults = function(obj) {
+    var args = Array.prototype.slice.call(arguments);
+    var obj = args[0];
+      for (var i = 1; i < args.length; i ++) {
+        var addObj = args[i];
+        for (var key in addObj) {
+          if (obj[key] === undefined){ // if key does not exist in obj
+            obj[key] = addObj[key];
+          }
+        }
+      }
+    return obj;
   };
 
 
@@ -219,6 +378,18 @@
   // already computed the result for the given argument and return that value
   // instead if possible.
   _.memoize = function(func) {
+    var alreadyCalled = {}; // store arguments and results here
+   
+    return function() {
+      var key = JSON.stringify(arguments); // convert arguments to string to use as key
+      if (alreadyCalled[key]) {
+        return alreadyCalled[key];
+      } else {
+        var result = func.apply(null, arguments); // apply and store result
+        alreadyCalled[key] = result;
+        return result;
+      }
+    };
   };
 
   // Delays a function for the given number of milliseconds, and then calls
@@ -227,7 +398,10 @@
   // The arguments for the original function are passed after the wait
   // parameter. For example _.delay(someFunction, 500, 'a', 'b') will
   // call someFunction('a', 'b') after 500ms
-  _.delay = function(func, wait) {
+  _.delay = function(func, wait, ...args) {
+    return setTimeout (function() {
+      func(...args);
+    }, wait);
   };
 
 
@@ -242,6 +416,18 @@
   // input array. For a tip on how to make a copy of an array, see:
   // http://mdn.io/Array.prototype.slice
   _.shuffle = function(array) {
+    var copy = array.slice(0);
+    var shuff = []; // this will be the shuffled array
+    var used = []; // keep track of elements already used
+
+    while (shuff.length !== copy.length) { // add elements to shuffle randomly, until all elements have been randomly added
+      var index = Math.floor(Math.random() * copy.length); // random generate index from 0 to length of array
+      if (_.indexOf(used, index) === -1) { // if this index has not already been used
+        shuff.push(copy[index]);
+      }
+      used.push(index); // now index has been used, add it to used list
+    }
+    return shuff;
   };
 
 
