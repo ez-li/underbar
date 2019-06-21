@@ -1,3 +1,4 @@
+
 (function() {
   'use strict';
 
@@ -7,26 +8,6 @@
       checkForNativeMethods(function() {
         _.contains([4, 5, 6], 2);
       });
-
-      _.contains = function(collection, target) {
-      // TIP: Many iteration problems can be most easily expressed in
-      // terms of reduce(). Here's a freebie to demonstrate!
-      var array = [];
-      if (Array.isArray(collection)) { // if collection is an array
-        array = collection;
-      } else { // if collection is an object, add its values to array
-        for (var key in collection) {
-          array.push(collection[key]);
-        }
-
-      }
-      return _.reduce(array, function(wasFound, item) {
-        if (wasFound) {
-          return true;
-        }
-        return item === target;
-      }, false);
-    };
 
       it('should be a function', function() {
         expect(_.contains).to.be.an.instanceOf(Function);
@@ -92,18 +73,6 @@
         return num % 2 === 0;
       };
 
-      _.every = function(collection, iterator) {
-        return _.reduce(collection, function(test, item) {
-          if (iterator) {
-            return (test && iterator(item)) ? true : false;
-          } else {
-              return (test && item) ? true : false;
-          }
-        }, true);
-
-      };
-
-
       checkForNativeMethods(function() {
         _.every([4, 5, 6], _.identity);
       });
@@ -149,17 +118,6 @@
     describe('some', function() {
       var isEven = function(number){
         return number % 2 === 0;
-      };
-
-      _.some = function(collection, iterator) {
-        return _.reduce(collection, function(test, item) {
-          if (iterator) {
-            return (test || iterator(item)) ? true : false;
-          } else {
-              return (test || item) ? true : false;
-          }
-        }, false);
-
       };
 
       checkForNativeMethods(function() {
@@ -211,19 +169,6 @@
         _.extend({ a: 1 },{ b: 1 }, { c: 1 });
       });
 
-      _.extend = function(obj) {
-        var obj = arguments[0];
-        if (arguments.length > 1) {
-          for (var i = 1; i < arguments.length; i ++) {
-            var addObj = arguments[i];
-            for (var key in addObj) {
-              obj[key] = addObj[key];
-            }
-          }
-        }
-        return obj;
-      };
-
       it('returns the first argument', function() {
         var destination = {};
         var source = {};
@@ -273,20 +218,6 @@
       checkForNativeMethods(function() {
         _.defaults({ a: 1 },{ b: 1 }, { c: 1 });
       });
-
-      _.defaults = function(obj) {
-        var args = Array.prototype.slice.call(arguments);
-        var obj = args[0];
-          for (var i = 1; i < args.length; i ++) {
-            var addObj = args[i];
-            for (var key in addObj) {
-              if (obj[key] === undefined){ // if key does not exist in obj
-                obj[key] = addObj[key];
-              }
-            }
-          }
-        return obj;
-      };
 
       it('should be a function', function() {
         expect(_.defaults).to.be.an.instanceOf(Function);
@@ -473,21 +404,6 @@
     describe('memoize', function() {
       var add, memoAdd;
 
-      _.memoize = function(func) {
-        var alreadyCalled = {}; // store arguments and results here
-       
-        return function() {
-          var key = JSON.stringify(arguments); // convert arguments to string to use as key
-          if (alreadyCalled[key]) {
-            return alreadyCalled[key];
-          } else {
-            var result = func.apply(null, arguments); // apply and store result
-            alreadyCalled[key] = result;
-            return result;
-          }
-        };
-      };
-
       beforeEach(function() {
         add = function(a, b) {
           return a + b;
@@ -552,12 +468,6 @@
     describe('delay', function() {
       var callback;
 
-      _.delay = function(func, wait, ...args) {
-        return setTimeout (function() {
-          func(...args);
-        }, wait);
-      };
-
       beforeEach(function() {
         callback = sinon.spy();
       })
@@ -597,6 +507,13 @@
         expect(shuffled).to.not.equal(numbers);
         expect(numbers).to.eql([4, 5, 6]);
       });
+      
+      it('should maintain same array length', function() {
+        var numbers = [1, 1, 2, 3];
+        var shuffled = _.shuffle(numbers);
+
+        expect(shuffled.length).to.equal(numbers.length);
+      });
 
       it('should have the same elements as the original object', function() {
         var numbers = [4, 5, 6];
@@ -612,7 +529,6 @@
         // This test will fail 1/9! times
         expect(shuffled).to.not.eql([4, 5, 6, 7, 8, 9, 10]);
       });
-
     });
 
   });
